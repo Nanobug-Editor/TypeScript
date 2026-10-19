@@ -1,0 +1,6 @@
+# Stable source bytes keep artifact checksums independent of checkout newline policy.
+* text=auto eol=lf
+*.zip binary
+*.wasm binary
+# Retain upstream legal notices byte-for-byte, including their original indentation.
+licenses/* -whitespace

@@ -1,0 +1,9 @@
+{
+  "status": "candidate; native package acceptance required",
+  "artifacts": [
+    {"file":"javascript.wasm","source":"https://github.com/tree-sitter/tree-sitter-javascript/tree/v0.23.1","artifact":"https://github.com/tree-sitter/tree-sitter-javascript/releases/download/v0.23.1/tree-sitter-javascript.wasm","sha256":"4a378293fe7853cbee2836023be072dafa0e53b3b5edb245920838ca834ed121","abi":14,"license":"LICENSE-javascript"},
+    {"file":"typescript.wasm","source":"https://github.com/tree-sitter/tree-sitter-typescript/tree/v0.23.2","artifact":"https://github.com/tree-sitter/tree-sitter-typescript/releases/download/v0.23.2/tree-sitter-typescript.wasm","sha256":"778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d","abi":14,"license":"LICENSE-typescript"},
+    {"file":"tsx.wasm","source":"https://github.com/tree-sitter/tree-sitter-typescript/tree/v0.23.2","artifact":"https://github.com/tree-sitter/tree-sitter-typescript/releases/download/v0.23.2/tree-sitter-tsx.wasm","sha256":"79e5da75ea62855a0cd67177685f0164eac87d5f630b3cbe1e0a099751ad30f8","abi":14,"license":"LICENSE-typescript"}
+  ],
+  "queries":"Upstream queries from those exact tags; javascript.scm = JS highlights; jsx.scm = JS + JSX; typescript.scm = JS + TS; tsx.scm = JS + JSX + TS. Original fragments retained. MIT licenses above cover the query sources."
+}

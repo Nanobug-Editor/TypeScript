@@ -1,0 +1,47 @@
+{
+  "language.contribution": {
+    "version": "1.0.0",
+    "collection": true,
+    "methods": {
+      "prepare": {
+        "parameters": {
+          "type": "record",
+          "fields": {
+            "document": {
+              "type": "record",
+              "fields": {
+                "path": {
+                  "type": "string",
+                  "max_bytes": 4096
+                },
+                "generation": {
+                  "type": "integer",
+                  "min": 0,
+                  "max": 9007199254740991
+                }
+              }
+            },
+            "payload": {
+              "type": "string",
+              "max_bytes": 49152
+            }
+          }
+        },
+        "result": {
+          "type": "record",
+          "fields": {
+            "payload": {
+              "type": "string",
+              "max_bytes": 49152
+            }
+          }
+        },
+        "permissions": [
+          "editor.read",
+          "workspace.read",
+          "native.modules"
+        ]
+      }
+    }
+  }
+}

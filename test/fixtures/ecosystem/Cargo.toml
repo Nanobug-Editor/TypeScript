@@ -1,0 +1,14 @@
+[package]
+name = "unfamiliar-ecosystem-fixture"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+license = "MIT"
+
+[workspace]
+[lib]
+crate-type = ["cdylib"]
+[dependencies]
+# Only Nanobug --plugin-cargo's exported SDK supplies this public dependency.
+plugin-protocol = { version = "=0.2.0", features = ["guest"] }
+serde_json = "1"

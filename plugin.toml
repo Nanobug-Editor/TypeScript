@@ -1,0 +1,59 @@
+# Recognition, analysis and grammar selection remain independently configurable.
+[plugin]
+id = "typescript"
+name = "TypeScript"
+version = "0.1.10"
+host_version = ">=0.1.0"
+
+[[language_definitions]]
+id = "typescript"
+name = "TypeScript"
+extensions = ["ts", "mts", "cts"]
+
+[[language_definitions]]
+id = "typescriptreact"
+name = "TypeScript JSX"
+extensions = ["tsx"]
+
+[[language_definitions]]
+id = "javascript"
+name = "JavaScript"
+extensions = ["js", "mjs", "cjs"]
+
+[[language_definitions]]
+id = "javascriptreact"
+name = "JavaScript JSX"
+extensions = ["jsx"]
+
+# Ordinary selectable providers: installation preserves an existing explicit grammar selection.
+[[highlighters]]
+id = "javascript-syntax"
+language = "javascript"
+grammar_name = "javascript"
+grammar = "grammar/javascript.wasm"
+highlights = "queries/grammar/javascript.scm"
+tree_sitter_abi = 14
+
+[[highlighters]]
+id = "jsx-syntax"
+language = "javascriptreact"
+grammar_name = "javascript"
+grammar = "grammar/javascript.wasm"
+highlights = "queries/grammar/jsx.scm"
+tree_sitter_abi = 14
+
+[[highlighters]]
+id = "typescript-syntax"
+language = "typescript"
+grammar_name = "typescript"
+grammar = "grammar/typescript.wasm"
+highlights = "queries/grammar/typescript.scm"
+tree_sitter_abi = 14
+
+[[highlighters]]
+id = "tsx-syntax"
+language = "typescriptreact"
+grammar_name = "tsx"
+grammar = "grammar/tsx.wasm"
+highlights = "queries/grammar/tsx.scm"
+tree_sitter_abi = 14

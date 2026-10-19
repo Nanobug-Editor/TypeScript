@@ -1,0 +1,83 @@
+{
+  "id": "unfamiliar-ecosystem",
+  "name": "Unfamiliar ecosystem fixture",
+  "version": "0.1.0",
+  "protocol": 7,
+  "component": "plugin.wasm",
+  "storage_limit": 1024,
+  "api": {
+    "base": "^1",
+    "required": {
+      "plugin.services": ">=1.2,<2",
+      "language.modules": "^1"
+    }
+  },
+  "permissions": [
+    "native.modules",
+    "editor.read",
+    "workspace.read"
+  ],
+  "plugin_services": {
+    "provides": {
+      "language.contribution": {
+        "version": "1.0.0",
+        "collection": true,
+        "methods": {
+          "prepare": {
+            "parameters": {
+              "type": "record",
+              "fields": {
+                "document": {
+                  "type": "record",
+                  "fields": {
+                    "path": {
+                      "type": "string",
+                      "max_bytes": 4096
+                    },
+                    "generation": {
+                      "type": "integer",
+                      "min": 0,
+                      "max": 9007199254740991
+                    }
+                  }
+                },
+                "payload": {
+                  "type": "string",
+                  "max_bytes": 49152
+                }
+              }
+            },
+            "result": {
+              "type": "record",
+              "fields": {
+                "payload": {
+                  "type": "string",
+                  "max_bytes": 49152
+                }
+              }
+            },
+            "permissions": [
+              "editor.read",
+              "workspace.read",
+              "native.modules"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "module_exports": {
+    "check": {
+      "root": "modules/check",
+      "entry": "index.cjs",
+      "sha256": "54b3d8074414b619bc2b8eb747d6e965fe5665a5b3696223f29a176d7fbd6628",
+      "files": {
+        "index.cjs": "54b3d8074414b619bc2b8eb747d6e965fe5665a5b3696223f29a176d7fbd6628"
+      },
+      "abi": "vue.language-plugin/1",
+      "engine": {
+        "typescript": "=5.9.3"
+      }
+    }
+  }
+}
