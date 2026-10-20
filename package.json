@@ -1,6 +1,6 @@
 {
   "name": "@nanobug/typescript-tools",
-  "version": "0.1.10",
+  "version": "0.1.15",
   "private": true,
   "type": "module",
   "description": "Nanobug TypeScript project and standard language protocol worker",

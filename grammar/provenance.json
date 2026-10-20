@@ -1,5 +1,5 @@
 {
-  "status": "candidate; native package acceptance required",
+  "status": "Native JS/JSX/TS/TSX grammar verification retained; ordinary Windows desktop TypeScript and Vue script/template highlighting observed on 2026-10-20. Exact scope and known accessibility teardown limitation: Editor/docs/plugins/verification/vue-typescript-desktop-2026-10-20.md. Artifact and query bytes unchanged.",
   "artifacts": [
     {"file":"javascript.wasm","source":"https://github.com/tree-sitter/tree-sitter-javascript/tree/v0.23.1","artifact":"https://github.com/tree-sitter/tree-sitter-javascript/releases/download/v0.23.1/tree-sitter-javascript.wasm","sha256":"4a378293fe7853cbee2836023be072dafa0e53b3b5edb245920838ca834ed121","abi":14,"license":"LICENSE-javascript"},
     {"file":"typescript.wasm","source":"https://github.com/tree-sitter/tree-sitter-typescript/tree/v0.23.2","artifact":"https://github.com/tree-sitter/tree-sitter-typescript/releases/download/v0.23.2/tree-sitter-typescript.wasm","sha256":"778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d","abi":14,"license":"LICENSE-typescript"},

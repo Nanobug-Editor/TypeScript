@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, toNamespacedPath } from 'node:path';
 import { Client, project } from './client.mjs';
 
 /** The harness is the trusted host: descriptors seal exact fixture bytes and carry no project plugin path. */
@@ -39,6 +39,35 @@ const first = `/** A real declared global contributes a type; no diagnostics or 
 module.exports = ({config}) => 'declare const contributed: '+config.type+';';`;
 const second = `/** The independent second declaration must coexist with the first module. */
 module.exports = () => 'declare const label: string;';`;
+
+test('Windows canonical contribution entries load only their verified closure and retain real types',
+  { skip: process.platform !== 'win32' }, async () => {
+    const source = 'const first: number = contributed;\n';
+    // Native export-cache roots can exceed MAX_PATH; preserve real extended-drive input, rather
+    // than testing prefix spelling only on a short transparent single-module fixture.
+    const typesRoot = 'types/' + 'verified-member-'.repeat(14);
+    const input = await project({ 'tsconfig.json': '{}', 'main.ts': source,
+      'base/index.cjs': base, [typesRoot + '/index.cjs']: first });
+    const client = new Client();
+    const canonical = lease => ({ ...lease, entry: toNamespacedPath(lease.entry),
+      package_root: toNamespacedPath(lease.package_root), module_root: toNamespacedPath(lease.module_root) });
+    try {
+      assert.ok(join(input.root, typesRoot, 'index.cjs').length > 260, 'fixture must exercise a real extended-drive path');
+      await client.initialize(input.root);
+      const uri = input.uri('main.ts'); client.open(uri, source);
+      const context = await client.request('typescript/project/resolve', { uri });
+      assert.ok((await client.request('textDocument/diagnostic', { textDocument: { uri } })).items.some(item => item.code === 2304));
+      await client.request('typescript/adapter/attach', { uri, context: context.context, generation: context.generation,
+        export: 'base', imports: [canonical(descriptor(input.root, 'base', base, 'typescript.adapter/1', 'base')),
+          canonical(descriptor(input.root, typesRoot, first, 'fixture.types/1', 'types'))],
+        contributions: [{ id: 'canonical-types', role: 'types', slot: 'globals', mode: 'compose',
+          abi: 'fixture.types/1', export: 'types', config: { type: 'number' }, before: [], after: [] }] });
+      assert.equal((await client.request('textDocument/diagnostic', { textDocument: { uri } })).items.length, 0);
+      const hover = await client.request('textDocument/hover', { textDocument: { uri }, position: { line: 0, character: 25 } });
+      assert.match(hover.contents.value, /contributed: number/);
+      assert.equal(await readFile(join(input.root, 'main.ts'), 'utf8'), source);
+    } finally { await client.close(); await input.cleanup(); }
+  });
 
 test('two sealed unknown modules compose actual types; conflicts and throwing factories preserve the previous engine', async () => {
   const source = 'const first: number = contributed;\nconst second: string = label;\n';

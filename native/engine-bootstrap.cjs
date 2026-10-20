@@ -11,12 +11,15 @@ const members = descriptor.contributions ?? [];
 const closures = members.map(member => verifyClosure(member.descriptor));
 installLoader([closure, ...closures], engineEntry);
 const ts = require(join(dirname(engineEntry), 'typescript.js'));
-if (createHash('sha256').update(readFileSync(descriptor.entry)).digest('hex') !== descriptor.sha256) throw new Error('Adapter entry changed');
-const adapter = require(descriptor.entry);
+// verifyClosure returns the native canonical file identity after ownership/digest checks. Node's
+// CJS resolver may call its JavaScript realpath walk for a raw Windows verbatim spelling; use the
+// verified entry for resolution, without trimming prefixes or granting a different file authority.
+if (createHash('sha256').update(readFileSync(closure.entry)).digest('hex') !== descriptor.sha256) throw new Error('Adapter entry changed');
+const adapter = require(closure.entry);
 if (typeof adapter !== 'function') throw new Error('Adapter must export a tsserver plugin factory');
 const accepted = adapter.extensionAbis ?? [];
 if (!Array.isArray(accepted) || members.some(member => !accepted.includes(member.abi))) throw new Error('Primary adapter rejects contribution ABI');
-const contributions = members.map(member => ({ ...member, descriptor: undefined, module: require(member.descriptor.entry) }));
+const contributions = members.map((member, index) => ({ ...member, descriptor: undefined, module: require(closures[index].entry) }));
 // TypeScript catches plugin factory/create exceptions internally. Report them through owned IPC so
 // a supposedly successful projectInfo reply cannot publish an uninitialized or incomplete adapter.
 const checkedAdapter = modules => {
@@ -41,7 +44,7 @@ if (!features || Array.isArray(features) || typeof features !== 'object' || Obje
 // Project plugin discovery is disabled. Even an explicit tsconfig plugin cannot load outside
 // this single host-authorized entry, and the factory receives this worker's exact TS singleton.
 ts.sys.require = (_base, name) => name === 'nanobug-managed-adapter'
-  ? { module: checkedAdapter, modulePath: descriptor.entry, error: undefined }
+  ? { module: checkedAdapter, modulePath: closure.entry, error: undefined }
   : { module: undefined, modulePath: undefined, error: new Error('Unleased project plugin denied') };
 ts.sys.importPlugin = undefined;
 process.argv = [process.execPath, engineEntry, '--disableAutomaticTypingAcquisition', '--useInferredProjectPerProjectRoot', '--globalPlugins', 'nanobug-managed-adapter'];

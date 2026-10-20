@@ -3,16 +3,17 @@ import { realpathSync, existsSync, readFileSync } from 'node:fs';
 import { dirname, join, isAbsolute, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { Engine } from './engine.mjs';
 import { invalid, stale, ProtocolError } from './errors.mjs';
 import { applyChanges, endPosition, location } from './coordinates.mjs';
 import { attach } from './adapters.mjs';
 import { Configurations } from './configuration.mjs';
+import { candidates, contains, loadConfigurations } from './project-candidates.mjs';
 const require = createRequire(import.meta.url);
 
 export class Projects {
-  constructor(rootUri, options = {}) {
+  constructor(rootUri, options = {}, onUnexpectedFailure = () => {}) {
     // The native host uses canonical verbatim Windows paths. Node's JavaScript realpath walk
     // misreads that prefix as a drive-relative component; the native API preserves the same
     // symlink-boundary checks without attempting lstat on the incomplete drive name.
@@ -32,12 +33,30 @@ export class Projects {
     } catch { throw new ProtocolError(-32004, 'TypeScript SDK missing or incompatible; tested engine is 5.9.3'); }
     this.entry = entry;
     this.configurations = new Configurations(entry, this.root);
-    this.engine = new Engine(entry, this.projectRoot);
     this.adapters = new Map();
     this.contexts = new Map();
     this.byConfig = new Map();
     this.documents = new Map();
-    this.ready = this.configure(this.engine);
+    this.retired = false;
+    this.onUnexpectedFailure = onUnexpectedFailure;
+    // Admission can be awaiting a factory when another published engine fails. Keep provisional
+    // children owned for disposal without including them in normal document synchronization.
+    this.candidatesInFlight = new Set();
+    // Selected context data comes from this plugin's host-registered descriptor, never a tool path.
+    if (options.context?.config !== undefined && (typeof options.context.config !== 'string'
+      || !options.context.config || /[\\:\x00-\x1f]/.test(options.context.config)
+      || options.context.config.split('/').some(part => !part || part === '.' || part === '..'))) throw invalid('Invalid selected project configuration');
+    this.selectedConfig = options.context?.config === undefined ? undefined
+      : this.file(pathToFileURL(join(this.root, options.context.config)).href);
+    // Validate every selected path before spawning; an invalid initialization owns no orphan engine.
+    this.engine = new Engine(entry, this.projectRoot);
+    this.ready = this.configure(this.engine).then(() => this.engine.admit(() => this.failed()));
+  }
+  /** A lost admitted compiler invalidates this service's adapter map and all of its source seals. */
+  failed() {
+    if (this.retired) return;
+    this.retired = true;
+    this.onUnexpectedFailure();
   }
   /** All owned engine variants receive the same JavaScript and inference policy. */
   configure(engine) {
@@ -46,6 +65,9 @@ export class Projects {
   }
   /** Adapter workers remain engine implementations of the same TS-owned project context. */
   async engineFor(uri) { return this.adapters.get((await this.project(uri)).project)?.engine ?? this.engine; }
+  /** Filesystem identity is canonical and case-insensitive only on Windows. */
+  identity(file) { return process.platform === 'win32' ? file.replaceAll('\\', '/').toLowerCase() : file; }
+  candidates(uri) { return candidates(this, uri); }
   attach(params) { return attach(this, params); }
   openOn(engine, document) {
     return engine.notify('open', { file: document.file, fileContent: document.text, scriptKindName: scriptKind(document.languageId), projectRootPath: this.projectRoot });
@@ -83,7 +105,7 @@ export class Projects {
         ? previous.file.toLowerCase() === file.toLowerCase() : previous.file === file)) throw invalid('Document identity is already open');
     const admitted = { ...document, file };
     try { for (const engine of this.engines()) await this.openOn(engine, admitted); }
-    catch (error) { await this.close(); throw error; }
+    catch (error) { this.failed(); await this.close(); throw error; }
     this.documents.set(document.uri, admitted);
   }
   /** Versions increase within one open incarnation; old updates never reach the compiler overlay. */
@@ -104,21 +126,49 @@ export class Projects {
   /** A partial fan-out must invalidate every copy instead of exposing inconsistent overlays. */
   async synchronize(command, args) {
     try { for (const engine of this.engines()) await engine.notify(command, args); }
-    catch (error) { await this.close(); throw error; }
+    catch (error) { this.failed(); await this.close(); throw error; }
   }
   /** ProjectInfo is the authoritative TS project association, not a duplicated directory walk. */
-  async project(uri) {
+  async project(uri, selected) {
     await this.ready;
     const document = this.document(uri);
+    if (selected !== undefined) {
+      const selectedProject = [...this.byConfig.values()].find(project => project.key === selected);
+      if (!selectedProject) throw stale('Unknown or retired project membership');
+      if (selectedProject.config) {
+        const adapter = this.adapters.get(selectedProject.project);
+        const member = await contains(this, adapter?.engine ?? this.engine, uri, selectedProject.config);
+        // Before a deferred extension's adapter exists, the base compiler cannot include it.
+        // Preserve only its nearest conventional configured identity for admission, as in S1;
+        // after attachment the adapter's real graph must confirm membership itself.
+        const awaitingExtension = !adapter && scriptKind(document.languageId) === 'Deferred'
+          && this.nearestConfig(document.file) === selectedProject.config;
+        if (!member && !awaitingExtension) throw stale('Unknown or retired project membership');
+        await this.refresh(selectedProject);
+        return selectedProject;
+      }
+      if ((await this.project(uri)).project !== selectedProject.project) throw stale('Inferred project membership changed');
+      return selectedProject;
+    }
+    if (this.selectedConfig) {
+      await loadConfigurations(this, this.engine, [this.selectedConfig], 'selected-context');
+      if (!await contains(this, this.engine, uri, this.selectedConfig)) throw invalid('Document does not belong to the selected project');
+      return this.configured(this.selectedConfig);
+    }
     const info = await this.engine.request('projectInfo', { file: document.file, needFileNameList: false });
     // tsserver cannot associate an unknown extension until its adapter is admitted. Preserve
     // the containing configured-project identity so mixed framework roots never share an inferred key.
     const reported = info.configFileName.replaceAll('\\', '/');
     const config = /inferredProject\d+\*/.test(reported) ? this.nearestConfig(document.file) ?? reported : reported;
+    return this.configured(config);
+  }
+  /** Context keys survive worker restarts; opaque consumer references remain incarnation-bound. */
+  async configured(config) {
     let project = this.byConfig.get(config);
     if (!project) {
       const inferred = /inferredProject\d+\*/.test(config);
       project = { project: randomUUID(), generation: 1, kind: inferred ? 'inferred' : 'configured',
+        key: `typescript:${createHash('sha256').update(inferred ? `inferred:${this.identity(this.projectRoot)}` : this.identity(config)).digest('hex')}`,
         root: inferred ? this.projectRoot.replaceAll('\\', '/') : dirname(config).replaceAll('\\', '/'),
         config: inferred ? null : config, engineVersion: this.engineVersion,
         features: ['completion', 'diagnostics', 'hover', 'definition', 'references', 'rename', 'formatting'] };
@@ -152,8 +202,8 @@ export class Projects {
     }
   }
   /** Each consumer receives its own release authority while sharing the same underlying project. */
-  async resolve(uri, consumer = 'lsp') {
-    const project = await this.project(uri);
+  async resolve(uri, consumer = 'lsp', selected) {
+    const project = await this.project(uri, selected);
     for (const [context, lease] of this.contexts) {
       if (lease.project === project && lease.consumer === consumer && lease.generation === project.generation) return this.describe(context, consumer);
     }
@@ -169,7 +219,11 @@ export class Projects {
     await this.refresh(lease.project);
     if (lease.generation !== lease.project.generation) throw stale('Project context generation changed; resolve again');
     const { fingerprint, ...project } = lease.project;
-    return { context: id, ...project };
+    return { context: id, ...project, registration: {
+      key: project.key, generation: project.generation,
+      project_root: relative(this.root, project.root).split(sep).join('/'),
+      data: { stamp: fingerprint, ...(project.config ? { config: relative(this.root, project.config).split(sep).join('/') } : {}) },
+    } };
   }
   async release(id, consumer = 'lsp') {
     await this.describe(id, consumer); this.contexts.delete(id);
@@ -188,7 +242,11 @@ export class Projects {
     if (!document) throw stale('Document is not open');
     return document;
   }
-  async close() { await Promise.all(this.engines().map(engine => engine.close())); this.adapters.clear(); this.documents.clear(); this.contexts.clear(); this.byConfig.clear(); }
+  async close() {
+    this.retired = true;
+    await Promise.all([...this.engines(), ...this.candidatesInFlight].map(engine => engine.close()));
+    this.adapters.clear(); this.candidatesInFlight.clear(); this.documents.clear(); this.contexts.clear(); this.byConfig.clear();
+  }
 }
 
 /** Protocol language identities select TS parsing without relying on file extensions alone. */

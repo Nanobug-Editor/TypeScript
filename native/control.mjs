@@ -72,7 +72,7 @@ export async function analyze(projects, params) {
   const target = projects.document(targetSource.uri);
   const engine = projects.adapters.get(context.project)?.engine ?? projects.engine;
   if (!COMMANDS.has(params.command) && !engine.commands.has(params.command)) throw new ProtocolError(-32601, 'Analysis command is not permitted');
-  const owned = await projects.project(target.uri);
+  const owned = await projects.project(target.uri, context.key);
   if (owned.project !== context.project) throw invalid('Analysis document belongs to another project context');
   const args = params.arguments ?? {};
   if (engine.commands.has(params.command)) {
@@ -83,7 +83,8 @@ export async function analyze(projects, params) {
   }
   if (Object.keys(args).some(key => !ARGUMENTS.has(key)) || Buffer.byteLength(JSON.stringify(args)) > 65536) throw invalid('Invalid or oversized analysis arguments');
   if (args.line !== undefined || args.offset !== undefined) offset(target.text, { line: args.line - 1, character: args.offset - 1 });
-  const result = await engine.request(params.command, { ...args, file: target.file });
+  const result = await engine.request(params.command, { ...args, file: target.file,
+    ...(context.config ? { projectFileName: context.config } : {}) });
   await check();
   return { context: context.context, generation: context.generation, versions, result };
 }

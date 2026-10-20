@@ -2,7 +2,7 @@
 [plugin]
 id = "typescript"
 name = "TypeScript"
-version = "0.1.10"
+version = "0.1.15"
 host_version = ">=0.1.0"
 
 [[language_definitions]]

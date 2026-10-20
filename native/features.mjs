@@ -8,7 +8,8 @@ export async function feature(projects, method, params) {
   const document = projects.document(params.textDocument.uri);
   const file = document.file;
   const at = params.position ? (offset(document.text, params.position), location(params.position)) : {};
-  const engine = await projects.engineFor(document.uri);
+  const project = await projects.project(document.uri);
+  const engine = projects.adapters.get(project.project)?.engine ?? projects.engine;
   // An immutable adapter may contribute source-level features using its own readonly protocol.
   // It receives the host-admitted filename and inert request data, never a new source snapshot.
   const adapterMethod = engine.features.get(method);
@@ -19,7 +20,8 @@ export async function feature(projects, method, params) {
     const fallback = result?.$nanobug === 'fallback' && Object.keys(result).length === 1;
     if (result != null && !fallback) return adapterResult(projects, method, result);
   }
-  const query = (command, args = {}) => engine.request(command, { file, ...at, ...args });
+  const query = (command, args = {}) => engine.request(command, { file,
+    ...(project.config ? { projectFileName: project.config } : {}), ...at, ...args });
   switch (method) {
     case 'textDocument/diagnostic': {
       const syntax = await query('syntacticDiagnosticsSync');
@@ -77,7 +79,8 @@ export async function feature(projects, method, params) {
         items: (result?.entries ?? []).map(item => ({ label: item.name, kind: completionKind(item.kind),
           sortText: item.sortText, insertText: item.insertText ?? item.name,
           ...(item.replacementSpan ? { textEdit: { range: range(item.replacementSpan), newText: item.insertText ?? item.name } } : {}),
-          data: { uri: document.uri, version: document.version, position: params.position, name: item.name, source: item.source, data: item.data },
+          data: { uri: document.uri, version: document.version, context: project.key,
+            generation: project.generation, position: params.position, name: item.name, source: item.source, data: item.data },
         })) };
     }
     default: throw new ProtocolError(-32601, 'Unsupported language feature');
@@ -89,8 +92,11 @@ export async function resolveCompletion(projects, item) {
   const data = item.data;
   const document = projects.document(data?.uri);
   if (document.version !== data.version) throw new ProtocolError(-32801, 'Completion source changed');
+  const project = await projects.project(document.uri);
+  if (data.context !== project.key || data.generation !== project.generation) throw new ProtocolError(-32801, 'Completion project context changed');
   offset(document.text, data.position);
   const details = await (await projects.engineFor(document.uri)).request('completionEntryDetails', { file: document.file, ...location(data.position),
+    ...(project.config ? { projectFileName: project.config } : {}),
     entryNames: [{ name: data.name, source: data.source, data: data.data }] });
   const detail = details?.[0];
   if (!detail) return item;

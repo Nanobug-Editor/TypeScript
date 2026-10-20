@@ -1,0 +1,44 @@
+{
+  "types": [
+    {"id":"unknown-source-check","role":"types","slot":"script-types","mode":"compose","abi":"vue.language-plugin/1","export":"types","config":{"role":"types","expectedType":"string"},"before":[],"after":[]}
+  ],
+  "template": [
+    {"id":"unknown-template","role":"template","slot":"template-compiler","mode":"exclusive","abi":"vue.language-plugin/1","export":"template","config":{"role":"template"},"before":[],"after":[]}
+  ],
+  "style": [
+    {"id":"unknown-style","role":"style","slot":"style-compiler","mode":"exclusive","abi":"vue.language-plugin/1","export":"style","config":{"role":"style"},"before":[],"after":[]}
+  ],
+  "project": [
+    {"id":"unknown-project","role":"project","slot":"vue-options","mode":"compose","abi":"vue.language-plugin/1","export":"project","config":{"role":"project","enabled":true},"before":[],"after":[]}
+  ],
+  "combined": [
+    {"id":"unknown-source-check","role":"types","slot":"script-types","mode":"compose","abi":"vue.language-plugin/1","export":"types","config":{"role":"types","expectedType":"string"},"before":[],"after":[]},
+    {"id":"unknown-template","role":"template","slot":"template-compiler","mode":"exclusive","abi":"vue.language-plugin/1","export":"template","config":{"role":"template"},"before":[],"after":["unknown-source-check"]},
+    {"id":"unknown-style","role":"style","slot":"style-compiler","mode":"exclusive","abi":"vue.language-plugin/1","export":"style","config":{"role":"style"},"before":[],"after":[]},
+    {"id":"unknown-project","role":"project","slot":"vue-options","mode":"compose","abi":"vue.language-plugin/1","export":"project","config":{"role":"project","enabled":true},"before":[],"after":[]}
+  ],
+  "without-style": [
+    {"id":"unknown-source-check","role":"types","slot":"script-types","mode":"compose","abi":"vue.language-plugin/1","export":"types","config":{"role":"types","expectedType":"string"},"before":[],"after":[]},
+    {"id":"unknown-template","role":"template","slot":"template-compiler","mode":"exclusive","abi":"vue.language-plugin/1","export":"template","config":{"role":"template"},"before":[],"after":["unknown-source-check"]},
+    {"id":"unknown-project","role":"project","slot":"vue-options","mode":"compose","abi":"vue.language-plugin/1","export":"project","config":{"role":"project","enabled":true},"before":[],"after":[]}
+  ],
+  "empty": [],
+  "exclusive-conflict": [
+    {"id":"first-template","role":"template","slot":"template-compiler","mode":"exclusive","abi":"vue.language-plugin/1","export":"template","config":{"role":"template"},"before":[],"after":[]},
+    {"id":"second-template","role":"template","slot":"template-compiler","mode":"compose","abi":"vue.language-plugin/1","export":"template","config":{"role":"template"},"before":[],"after":[]}
+  ],
+  "ordering-cycle": [
+    {"id":"first-types","role":"types","slot":"script-types","mode":"compose","abi":"vue.language-plugin/1","export":"types","config":{"role":"types"},"before":[],"after":["second-types"]},
+    {"id":"second-types","role":"types","slot":"script-types","mode":"compose","abi":"vue.language-plugin/1","export":"types","config":{"role":"types"},"before":[],"after":["first-types"]}
+  ],
+  "configuration-conflict": [
+    {"id":"strict-project","role":"project","slot":"vue-options","mode":"compose","abi":"vue.language-plugin/1","export":"project","config":{"role":"project","enabled":true},"before":[],"after":[]},
+    {"id":"permissive-project","role":"project","slot":"vue-options","mode":"compose","abi":"vue.language-plugin/1","export":"project","config":{"role":"project","enabled":false},"before":[],"after":[]}
+  ],
+  "invalid-mapping": [
+    {"id":"unknown-invalid-source-map","role":"types","slot":"script-types","mode":"compose","abi":"vue.language-plugin/1","export":"types","config":{"role":"types","invalidMapping":true},"before":[],"after":[]}
+  ],
+  "invalid-project-config": [
+    {"id":"unknown-project","role":"project","slot":"vue-options","mode":"compose","abi":"vue.language-plugin/1","export":"project","config":{"role":"project","enabled":"invalid"},"before":[],"after":[]}
+  ]
+}

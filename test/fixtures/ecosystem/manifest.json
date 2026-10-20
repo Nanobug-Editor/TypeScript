@@ -1,7 +1,7 @@
 {
   "id": "unfamiliar-ecosystem",
   "name": "Unfamiliar ecosystem fixture",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "protocol": 7,
   "component": "plugin.wasm",
   "storage_limit": 1024,
@@ -9,10 +9,12 @@
     "base": "^1",
     "required": {
       "plugin.services": ">=1.2,<2",
-      "language.modules": "^1"
+      "language.modules": "^1",
+      "package.assets": "^1"
     }
   },
   "permissions": [
+    "assets.read",
     "native.modules",
     "editor.read",
     "workspace.read"
@@ -67,12 +69,60 @@
     }
   },
   "module_exports": {
+    "types": {
+      "root": "modules/types",
+      "entry": "index.cjs",
+      "sha256": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1",
+      "files": {
+        "index.cjs": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1"
+      },
+      "abi": "vue.language-plugin/1",
+      "engine": {
+        "typescript": "=5.9.3"
+      }
+    },
+    "template": {
+      "root": "modules/template",
+      "entry": "index.cjs",
+      "sha256": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1",
+      "files": {
+        "index.cjs": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1"
+      },
+      "abi": "vue.language-plugin/1",
+      "engine": {
+        "typescript": "=5.9.3"
+      }
+    },
+    "style": {
+      "root": "modules/style",
+      "entry": "index.cjs",
+      "sha256": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1",
+      "files": {
+        "index.cjs": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1"
+      },
+      "abi": "vue.language-plugin/1",
+      "engine": {
+        "typescript": "=5.9.3"
+      }
+    },
+    "project": {
+      "root": "modules/project",
+      "entry": "index.cjs",
+      "sha256": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1",
+      "files": {
+        "index.cjs": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1"
+      },
+      "abi": "vue.language-plugin/1",
+      "engine": {
+        "typescript": "=5.9.3"
+      }
+    },
     "check": {
       "root": "modules/check",
       "entry": "index.cjs",
-      "sha256": "54b3d8074414b619bc2b8eb747d6e965fe5665a5b3696223f29a176d7fbd6628",
+      "sha256": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1",
       "files": {
-        "index.cjs": "54b3d8074414b619bc2b8eb747d6e965fe5665a5b3696223f29a176d7fbd6628"
+        "index.cjs": "48b6f9aeed9622835833a27f4f85db26ba4a3df76c9a6654c38946c5d98380a1"
       },
       "abi": "vue.language-plugin/1",
       "engine": {

@@ -3,5 +3,8 @@
   "manifest": "manifest.json",
   "output": "dist",
   "wasm": { "manifest": "Cargo.toml" },
-  "assets": [{ "source": "modules", "destination": "modules" }]
+  "assets": [
+    { "source": "modules", "destination": "modules" },
+    { "source": "contributions.json", "destination": "contributions.json" }
+  ]
 }

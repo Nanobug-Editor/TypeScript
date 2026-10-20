@@ -10,6 +10,11 @@ export class Engine {
     this.pending = new Map();
     this.buffer = Buffer.alloc(0);
     this.closed = false;
+    // Provisional adapter failures are recoverable admission errors. Only a published engine can
+    // retire its owning stdio service; explicit disposal never reports another unexpected failure.
+    this.expectedClose = false;
+    this.failureHandler = undefined;
+    this.failure = undefined;
     this.writeQueue = Promise.resolve();
     this.queuedBytes = 0;
     this.commands = new Set();
@@ -46,19 +51,30 @@ export class Engine {
     // The whole owned worker retires; callers receive an error instead of partially extended output.
     if (adapter) this.child.on('message', message => {
       if (message && typeof message === 'object' && 'type' in message && message.type === 'adapterFailed' && 'message' in message) {
-        this.fail(new ProtocolError(-32002, `Adapter factory failed: ${message.message}`));
+        this.fault(new ProtocolError(-32002, `Adapter factory failed: ${message.message}`));
         void this.close();
       }
     });
     this.exited = new Promise(resolve => this.child.once('close', resolve));
     this.child.stdout.on('data', data => {
-      try { this.receive(data); } catch { this.fail(new ProtocolError(-32001, 'Invalid TypeScript transport frame')); void this.close(); }
+      try { this.receive(data); } catch { this.fault(new ProtocolError(-32001, 'Invalid TypeScript transport frame')); void this.close(); }
     });
     // Drain stderr without forwarding project-controlled messages into protocol framing.
     this.child.stderr.on('data', () => {});
-    this.child.on('error', () => this.fail(new ProtocolError(-32001, 'TypeScript engine could not start')));
-    this.child.on('exit', () => this.fail(new ProtocolError(-32001, 'TypeScript engine exited')));
-    this.child.stdin.on('error', () => this.fail(new ProtocolError(-32001, 'TypeScript input closed')));
+    this.child.on('error', () => this.fault(new ProtocolError(-32001, 'TypeScript engine could not start')));
+    this.child.on('exit', () => this.fault(new ProtocolError(-32001, 'TypeScript engine exited')));
+    this.child.stdin.on('error', () => this.fault(new ProtocolError(-32001, 'TypeScript input closed')));
+  }
+  /** Arm retirement only after initialization/adapter admission has completed successfully. */
+  admit(onUnexpectedFailure) {
+    if (this.closed) throw this.failure ?? new ProtocolError(-32001, 'TypeScript engine retired');
+    this.failureHandler = onUnexpectedFailure;
+  }
+  /** Pipe/framing/child failure invalidates the complete published worker, not a business request. */
+  fault(error) {
+    const handler = !this.expectedClose && !this.closed ? this.failureHandler : undefined;
+    this.fail(error);
+    if (handler) handler();
   }
   /** Reliable replies are correlated; unsolicited TS telemetry never enters editor results. */
   receive(data) {
@@ -100,6 +116,7 @@ export class Engine {
     catch (error) {
       // LSP notifications have no response that could repair a lost overlay. Retire this worker
       // before another feature can mistake its last accepted snapshot for the current source.
+      this.fault(error);
       await this.close();
       throw error;
     }
@@ -118,7 +135,7 @@ export class Engine {
       // process also cancels its pending analyses; a late pipe callback cannot revive them.
       const timer = setTimeout(() => {
         const error = new ProtocolError(-32003, 'TypeScript input timed out');
-        reject(error); this.fail(error); void this.close();
+        reject(error); this.fault(error); void this.close();
       }, 30000);
       this.child.stdin.write(frame, error => {
         clearTimeout(timer);
@@ -130,12 +147,14 @@ export class Engine {
     return sent.finally(() => { this.queuedBytes -= frame.length; });
   }
   fail(error) {
+    this.failure ??= error;
     this.closed = true;
     for (const item of this.pending.values()) { clearTimeout(item.timer); item.reject(error); }
     this.pending.clear();
   }
   /** Shutdown waits for physical process closure before the parent may release its SDK files. */
   async close() {
+    this.expectedClose = true;
     this.fail(new ProtocolError(-32001, 'TypeScript engine retired'));
     if (this.child.exitCode === null && this.child.signalCode === null) this.child.kill();
     await this.exited;

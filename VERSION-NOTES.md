@@ -50,3 +50,52 @@ Changing the source version alone does not update or validate an existing artifa
   writes before releasing document dispatch, and emits a strict import-release failure receipt
   after candidate cleanup. Real paused-SDK transport and throwing-factory regressions first failed
   on the previous source. These transport fixtures do not replace real TypeScript/Vue semantics.
+- `0.1.11`: enumerates real configured graph memberships and routes the public native primary
+  through a fixed interactive preparation contract. The compiler bootstrap remains an internal
+  provider; opaque registered contexts retain exact owner/scope/configuration seals. Native project
+  choice, source navigation hints and workspace-local CAS preferences share one facade. A compiler
+  fingerprint catalog separates host generations from worker-local counters; inferred identities
+  include their canonical root. Source tests cover opposite types for one shared source, independent
+  worker restart and configuration changes; actual package/host choice acceptance is recorded by
+  the host coordinator separately. This frozen candidate's prefixed SHA-256 name exceeded the
+  public 64-byte key limit; real native project choice failed before QuickPick. Requires
+  `language.lsp >=1.6` and `workspace.files >=1.4`.
+- `0.1.12`: fixes that guest preference key to full lowercase SHA-256 hex over the fixed domain
+  `typescript.project.v1`, a NUL byte, then the exact host-issued portable source path in UTF-8.
+  The encoding keeps all digest bits within the existing 64-byte contract, with no case folding
+  or Unicode normalization. Golden keys and public `PreferenceKey::validate` reproduce the old
+  failure and pass after the fix. Native worker/archive bytes remain the verified 0.1.11 closure;
+  real native chooser, reopen, F12 and retained-preference acceptance remain separate host gates.
+
+- `0.1.13`: retires the owning stdio service when a fully initialized compiler or admitted adapter
+  suffers an unexpected child/pipe failure. Pending requests fail without replay; normal host recovery
+  can rebuild the process-local adapters. Provisional admission failure and explicit close remain
+  recoverable request/lifecycle paths. Disposal also owns in-flight candidate children. Real stdio
+  tests killed only an owned compiler/adapter leaf, observed failed outer exit and retained a peer's
+  concrete types; the compiler case reproduced the previous permanently-live outer service first.
+  The native archive is rebuilt and versioned separately from the unchanged public contracts.
+  The rebuilt native closure passes 47 source and 47 sealed tool tests with no skips. Actual
+  installed Vue adapter-child recovery remains a separate host gate; tool success does not replace it.
+
+- `0.1.14`: loads the primary adapter and every contribution through the native canonical entry
+  returned by its own verified closure. A real public stdio attachment with host-style Windows paths
+  reproduced `Adapter failed to load`; a bounded bootstrap probe isolated Node CJS `EISDIR lstat C:`.
+  The prior primary-only normalization missed contribution entries. Existing ownership, complete
+  file digests, module hooks and neighbor rejection remain enforced. The regression includes an
+  extended-drive contribution path longer than 260 characters and proves actual compiler types.
+  A live UNC share was unavailable, so no network-share execution claim is made. Frozen .13 inputs
+  remain evidence. The rebuilt closure passes 48 source and 48 sealed tool tests with no skips;
+  installed package verification remains a separate host gate.
+
+- `0.1.15`: functional support for the declared Windows x86-64 / TS 5.9.3 / Node 24.19.0
+  combinations, with exactly Vue 2.6.14, 2.7.16 and 3.5.22 through the independent Vue plugin's
+  26 applicable writing combinations and pinned dependencies. Plugin and native
+  artifact versions are separate: all native service 0.1.14 bytes and its archive SHA-256 remain
+  unchanged, including serverInfo 0.1.14. The public contracts, permissions and fixed toolchain
+  remain identical. Retained host runs passed S4 conflict recovery (280.28s), S5 outer recovery/update
+  (164.27s), Worker revocation/live update (67.94s/67.84s), and candidate mixed-version warm-cache
+  S1 (97.62s). Ordinary Windows desktop language/edit, real Chinese IME, theme and explicit hover
+  reopening evidence is recorded in Editor/docs/plugins/verification/vue-typescript-desktop-2026-10-20.md.
+  The existing AccessKit invalid-HWND/COM window-teardown abort remains a recorded upstream limit.
+  Earlier failed candidates remain historical evidence. Exact archive identities and final policy/pair
+  results belong to the external host delivery receipt; this label does not certify a ZIP run or Release.

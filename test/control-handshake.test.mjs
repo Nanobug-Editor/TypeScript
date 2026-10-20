@@ -14,6 +14,8 @@ test('initialize acknowledges the exact native control version and request metho
       methods: [
         'typescript/adapter/attach',
         'typescript/analysis/request',
+        'typescript/project/bind',
+        'typescript/project/candidates',
         'typescript/project/describe',
         'typescript/project/documents',
         'typescript/project/release',

@@ -8,11 +8,14 @@ import { related } from './related.mjs';
 let projects;
 let shutdown = false;
 let control = false;
+let retirement;
 /** Exact readonly request range selected by this implementation; lifecycle notifications stay
  * reserved to the owning stdio host and never become callable plugin methods. */
 const CONTROL_METHODS = Object.freeze([
   'typescript/adapter/attach',
   'typescript/analysis/request',
+  'typescript/project/bind',
+  'typescript/project/candidates',
   'typescript/project/describe',
   'typescript/project/documents',
   'typescript/project/release',
@@ -53,7 +56,7 @@ async function handle(method, params, notify) {
     if (offeredControl !== undefined && offeredControl !== 1) {
       throw new ProtocolError(-32006, 'Unsupported native control protocol version');
     }
-    projects = new Projects(params.rootUri, params.initializationOptions ?? {});
+    projects = new Projects(params.rootUri, params.initializationOptions ?? {}, retireService);
     await projects.ready;
     control = offeredControl === 1;
     return { capabilities: { positionEncoding: 'utf-16', textDocumentSync: { openClose: true, change: 2, save: true },
@@ -63,7 +66,7 @@ async function handle(method, params, notify) {
       documentRangeFormattingProvider: true,
       diagnosticProvider: { interFileDependencies: true, workspaceDiagnostics: false },
       experimental: control ? { nanobugControl: { version: 1, methods: CONTROL_METHODS } } : {} },
-      serverInfo: { name: 'Nanobug TypeScript', version: '0.1.10' } };
+      serverInfo: { name: 'Nanobug TypeScript', version: '0.1.14' } };
   }
   if (method === 'exit') { await dispose(); process.stdin.destroy(); return null; }
   if (method === 'shutdown') { shutdown = true; await dispose(); return null; }
@@ -72,7 +75,7 @@ async function handle(method, params, notify) {
     // This metadata is supplied only by the owning host's authenticated control dispatcher.
     // It is not a secret or a standalone socket authentication mechanism; the stdio owner is trusted.
     if (params.path !== undefined) {
-      params.uri = controlUri(projects, params, ['typescript/project/resolve', 'typescript/adapter/attach', 'typescript/analysis/request'].includes(method));
+      params.uri = controlUri(projects, params, ['typescript/project/candidates', 'typescript/project/resolve', 'typescript/project/bind', 'typescript/adapter/attach', 'typescript/analysis/request'].includes(method));
     }
   }
   switch (method) {
@@ -85,7 +88,9 @@ async function handle(method, params, notify) {
     case 'textDocument/didClose': await projects.closeDocument(params.textDocument.uri); return null;
     case 'textDocument/didSave': return null;
     case 'completionItem/resolve': return resolveCompletion(projects, params);
-    case 'typescript/project/resolve': return projects.resolve(params.uri, params.consumer);
+    case 'typescript/project/candidates': return projects.candidates(params.uri);
+    case 'typescript/project/resolve': return projects.resolve(params.uri, params.consumer, params.project);
+    case 'typescript/project/bind': return projects.resolve(params.uri, params.consumer);
     case 'typescript/project/describe': return projects.describe(params.context, params.consumer);
     case 'typescript/project/release': return projects.release(params.context, params.consumer);
     case 'typescript/analysis/request': return analyze(projects, params);
@@ -98,6 +103,17 @@ async function handle(method, params, notify) {
 
 /** EOF, shutdown and signal paths all await the owned TypeScript process before returning. */
 async function dispose() { if (projects) await projects.close(); }
-serve(process.stdin, process.stdout, dispatch, dispose);
+const transport = serve(process.stdin, process.stdout, dispatch, dispose);
+/** An admitted inner process is part of this managed service's health. End the actual owned stdio
+ * boundary after all children close, so the host applies its existing per-context recovery budget.
+ * Ordinary RPC errors and provisional factory/SDK admission failures never enter this path.
+ */
+function retireService() {
+  if (retirement) return;
+  shutdown = true;
+  process.exitCode = 1;
+  retirement = transport.stop().finally(() => { process.stdin.destroy(); process.stdout.end(); });
+  void retirement.catch(() => { process.exitCode = 1; });
+}
 process.on('SIGTERM', () => { void dispose().finally(() => process.exit(0)); });
 process.on('SIGINT', () => { void dispose().finally(() => process.exit(0)); });

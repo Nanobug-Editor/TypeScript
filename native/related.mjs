@@ -17,7 +17,8 @@ export async function related(projects, arguments_) {
   const target = projects.document(arguments_.target.uri);
   const project = await projects.project(target.uri);
   const engine = projects.adapters.get(project.project)?.engine ?? projects.engine;
-  const info = await engine.request('projectInfo', { file: target.file, needFileNameList: true });
+  const info = await engine.request('projectInfo', { file: target.file, needFileNameList: true,
+    ...(project.config ? { projectFileName: project.config } : {}) });
   if (!Array.isArray(info.fileNames)) throw invalid('Compiler did not return a project graph');
   const members = new Set([target.file]);
   for (const file of info.fileNames) {

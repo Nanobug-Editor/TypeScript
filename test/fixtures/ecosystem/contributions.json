@@ -1,0 +1,16 @@
+[
+  {
+    "id": "unknown-source-check",
+    "role": "types",
+    "slot": "script-types",
+    "mode": "compose",
+    "abi": "vue.language-plugin/1",
+    "export": "types",
+    "config": {
+      "role": "types",
+      "expectedType": "string"
+    },
+    "before": [],
+    "after": []
+  }
+]

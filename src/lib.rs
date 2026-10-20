@@ -5,22 +5,27 @@
 use plugin_protocol::{
     api::{self, ErrorCode, Failure},
     bindings::{Guest, export},
-    language, language_control, service,
+    language, language_context, language_control, service,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::BTreeMap};
+mod catalog;
 mod contributions;
 mod project_root;
+mod selection;
 
 /// Pending requests retain their original invocation handles; no reply can cross callers or epochs.
 struct Pending {
     reply: api::ResourceHandle,
     task: contributions::Task,
+    register: bool,
 }
 
 #[derive(Default)]
 struct State {
     pending: BTreeMap<u64, Pending>,
+    selection: selection::Selection,
+    catalog: catalog::Catalog,
 }
 
 thread_local! { static STATE: RefCell<State> = RefCell::new(State::default()); }
@@ -33,7 +38,11 @@ impl Guest for TypeScriptPlugin {
             STATE.with(|cell| {
                 let mut state = cell.borrow_mut();
                 match input {
-                    api::Input::Prepare { .. } => state.pending.clear(),
+                    api::Input::Prepare { .. } => {
+                        state.pending.clear();
+                        state.selection.clear();
+                        state.catalog = Default::default();
+                    }
                     api::Input::Snapshot => {
                         // The host owns durable settings. Invocation handles and compiler contexts
                         // are process-scoped resources and must never enter a saved snapshot.
@@ -68,10 +77,15 @@ impl Guest for TypeScriptPlugin {
                             }),
                         ..
                     } => {
+                        state.selection.cancel(request.resource);
                         if let Some(pending) = state.pending.remove(&request.resource) {
                             let _ = pending.task.cancel(api::CancelMode::StopWaiting);
                         }
                     }
+                    api::Input::Event {
+                        event: api::Notification::Command { id, .. },
+                        ..
+                    } if id == "select-project" => state.selection.reselect()?,
                     api::Input::Event { event, .. } => state.complete(&event),
                     _ => {}
                 }
@@ -84,9 +98,15 @@ impl Guest for TypeScriptPlugin {
 /// Fixed approved tools run per discovered root; tsserver owns the actual project graph within it.
 /// Explicit SDK paths are sent as data to the engine policy and never cause a silent default fallback.
 fn language_plan(context: language::Context) -> Result<api::Output, Failure> {
-    let root = project_root::discover(context.document.as_ref())?;
+    let root = match &context.selected_context {
+        Some(selected) => selected.project_root.clone(),
+        None => project_root::discover(context.document.as_ref())?,
+    };
     let mut options = serde_json::Map::new();
     options.insert("workspace".into(), Value::String(context.workspace.clone()));
+    if let Some(selected) = &context.selected_context {
+        options.insert("context".into(), selected.data.clone());
+    }
     if let Some(value) = context.settings.get("typescript.sdk")
         && matches!(
             value.source,
@@ -99,11 +119,20 @@ fn language_plan(context: language::Context) -> Result<api::Output, Failure> {
     Ok(api::Output {
         language_service: Some(language::Proposal {
             context: Some(language::ProjectContext {
-                key: format!("typescript:{root}"),
+                key: context.selected_context.as_ref().map_or_else(
+                    || format!("typescript:{root}"),
+                    |selected| selected.key.clone(),
+                ),
                 generation: context
-                    .document
+                    .selected_context
                     .as_ref()
-                    .map_or(1, |value| value.generation.max(1)),
+                    .map(|selected| selected.generation)
+                    .unwrap_or_else(|| {
+                        context
+                            .document
+                            .as_ref()
+                            .map_or(1, |value| value.generation.max(1))
+                    }),
             }),
             project_root: (!root.is_empty()).then_some(root),
             initialization_options: Some(Value::Object(options)),
@@ -116,6 +145,9 @@ fn language_plan(context: language::Context) -> Result<api::Output, Failure> {
 impl State {
     /// Public callers supply a bounded JSON value envelope; source identity is always a typed context.
     fn invoke(&mut self, call: service::Invocation) -> Result<(), Failure> {
+        if call.contract == "typescript.language" && call.method == "prepare" {
+            return self.selection.prepare(call);
+        }
         if self.pending.len() >= 32 {
             return Err(Failure::new(
                 ErrorCode::LimitExceeded,
@@ -138,6 +170,7 @@ impl State {
             ));
         }
         let method = match (call.contract.as_str(), call.method.as_str()) {
+            ("typescript.project", "candidates") => "typescript/project/candidates",
             ("typescript.project", "resolve") => "typescript/project/resolve",
             ("typescript.project", "describe") => "typescript/project/describe",
             ("typescript.project", "release") => "typescript/project/release",
@@ -194,7 +227,7 @@ impl State {
         let publish_binding = (method == "typescript/adapter/attach").then(|| document.clone());
         document.generation = 0;
         let request = language_control::Request {
-            provider: "analysis".into(),
+            provider: "engine".into(),
             arguments: json!({ "path": document.path, "payload": encoded }),
             context_snapshot: method == "typescript/analysis/request",
             service_sets: Vec::new(),
@@ -204,12 +237,20 @@ impl State {
             imports,
         };
         let task = contributions::Task::start(request)?;
-        self.pending.insert(reply.resource, Pending { reply, task });
+        self.pending.insert(
+            reply.resource,
+            Pending {
+                reply,
+                task,
+                register: method == "typescript/project/resolve",
+            },
+        );
         Ok(())
     }
 
     /// Completing a native request releases exactly its deferred service invocation, including errors.
     fn complete(&mut self, event: &api::Notification) {
+        self.selection.update(event, &mut self.catalog);
         let mut ready = Vec::new();
         for (id, pending) in &mut self.pending {
             match pending.task.update(event) {
@@ -243,6 +284,50 @@ impl State {
                                 ErrorCode::LimitExceeded,
                                 "TypeScript result exceeds quota",
                             ));
+                        }
+                        if pending.register {
+                            // The owning engine supplies relative graph facts. Runtime independently
+                            // checks provider identity, native canonical containment and generation.
+                            let context: Value = serde_json::from_str(payload).map_err(|_| {
+                                Failure::new(
+                                    ErrorCode::InvalidState,
+                                    "Invalid TypeScript project description",
+                                )
+                            })?;
+                            let registration = &context["registration"];
+                            if !registration.is_null() {
+                                let descriptor = language_context::Descriptor {
+                                    provider: "engine".into(),
+                                    key: registration["key"]
+                                        .as_str()
+                                        .ok_or_else(|| {
+                                            Failure::new(
+                                                ErrorCode::InvalidState,
+                                                "Missing project key",
+                                            )
+                                        })?
+                                        .into(),
+                                    generation: registration["generation"].as_u64().ok_or_else(
+                                        || {
+                                            Failure::new(
+                                                ErrorCode::InvalidState,
+                                                "Missing project generation",
+                                            )
+                                        },
+                                    )?,
+                                    project_root: registration["project_root"]
+                                        .as_str()
+                                        .ok_or_else(|| {
+                                            Failure::new(
+                                                ErrorCode::InvalidState,
+                                                "Missing project root",
+                                            )
+                                        })?
+                                        .into(),
+                                    data: registration["data"].clone(),
+                                };
+                                self.catalog.register(vec![descriptor])?;
+                            }
                         }
                         if let Some(binding) = binding {
                             value["binding"] = Value::String(binding);
