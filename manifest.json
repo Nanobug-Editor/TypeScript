@@ -1,7 +1,7 @@
 {
   "id": "typescript",
   "name": "TypeScript",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "protocol": 7,
   "scope": "workspace",
   "component": "typescript.wasm",
@@ -449,9 +449,9 @@
         "artifacts": [
           {
             "id": "tools",
-            "version": "0.1.14",
+            "version": "0.1.17",
             "platform": "windows-x86_64",
-            "sha256": "71c2794f0833bb548d365255878362b4637750bdac05e7ff7e8392df73884f83",
+            "sha256": "5532b77fcb6fe31612525caa140a1e499a0d10efa67326cd4ce3201fde0faf07",
             "source": {
               "kind": "package",
               "path": "artifacts/typescript-windows-x86_64.zip"

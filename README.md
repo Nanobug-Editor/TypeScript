@@ -2,16 +2,18 @@
 
 [简体中文](README.zh-CN.md)
 
-Compatibility rebuild 0.1.16 requires a host implementing `language.lsp >=1.6,<2` and
+Runtime rebuild 0.1.17 requires a host implementing `language.lsp >=1.6,<2` and
 `workspace.files >=1.4,<2`, including the context registry and the canonical interactive prepare
 profile. The host's application version alone does not identify this target. Earlier 1.5/1.3
 hosts reject this package before activation; project choice, cancellation and permission checks
-remain enabled. This rebuild retains the native service 0.1.14 archive and introduces no SDK helper
-or new permission. Exact new host, SDK and ZIP identities and exercised checks are recorded in the
-host's `docs/plugins/verification/official-sdk-typescript-2026-10-21.md`; the historical runs below
-keep their original package identities.
+remain enabled. The missing native service 0.1.14 archive has been rebuilt from the locked sources
+as independent runtime 0.1.17, with SHA-256
+`5532b77fcb6fe31612525caa140a1e499a0d10efa67326cd4ce3201fde0faf07`.
+It uses Node 24.19.0 and TypeScript 5.9.3 and introduces no new permission. The generator reads
+`version` and `runtimeVersion` independently from `package.json`; 49 source tests passed without skips.
+The historical host checks below keep their original package identities.
 
-An independent Nanobug plugin owning TypeScript project contexts and native compiler workers. Plugin 0.1.15 supports the verified Windows x86-64 combinations of TypeScript 5.9.3, Node 24.19.0, and Vue 2.6.14, 2.7.16 and 3.5.22 through the independent Vue plugin. Vue support covers the 26 declared applicable writing combinations and their pinned dependencies. It retains the exact native service 0.1.14 archive and its SHA-256 `71c2794f0833bb548d365255878362b4637750bdac05e7ff7e8392df73884f83`. Plugin and native artifact versions are independent. Each selected configured root (or inferred source directory) has its own host transport lifetime; the original workspace boundary still contains shared source snapshots. This functional support declaration does not imply a Release or marketplace publication.
+An independent Nanobug plugin owning TypeScript project contexts and native compiler workers. The supported Windows x86-64 combinations use TypeScript 5.9.3, Node 24.19.0, and Vue 2.6.14, 2.7.16 and 3.5.22 through the independent Vue plugin. Vue support covers the 26 declared applicable writing combinations and their pinned dependencies. Plugin and native artifact versions are independent. Each selected configured root (or inferred source directory) has its own host transport lifetime; the original workspace boundary still contains shared source snapshots. This functional support declaration does not imply a Release or marketplace publication.
 
 The unchanged native closure passed 48 source and 48 sealed tool tests with no skips. Retained native historical/edit and external-script scenarios keep their original package identities. Host verification passed S4 conflict rejection/recovery (280.28s), S5 outer update/recovery (164.27s), Worker revocation/live update (67.94s/67.84s), and the three-version warm-cache S1 scenario using the .15/.12 pending-support metadata candidates (97.62s). These are retained runs, not new runs against a support-label rebuild.
 
@@ -44,7 +46,7 @@ $hostExe = 'C:/path/to/editor-app.exe'
 & $hostExe --plugin-package .
 ```
 
-The staging command copies the executing Node runtime and locked TypeScript distribution. Run it with Node 24.19.0; its upstream license is retained under `licenses/`. All runtime bytes are packaged with their SHA-256, so deployment needs no project-wide installation or global environment changes. The guest depends only on the host-exported SDK. A metadata-only plugin update retains the existing native archive and skips staging/compression; `build.mjs` keeps that artifact's independent 0.1.14 identity.
+The staging command copies the executing Node runtime and locked TypeScript distribution. Run it with Node 24.19.0; its upstream license is retained under `licenses/`. All runtime bytes are packaged with their SHA-256, so deployment needs no project-wide installation or global environment changes. The guest depends only on the host-exported SDK. A metadata-only plugin update retains the existing native archive and skips staging/compression. `package.json` records its independent `runtimeVersion`; rebuilding native bytes requires a new runtime version and digest. Keep the resulting archive immutable after validation.
 
 Verify with `node --test --test-concurrency=1 test/*.test.mjs`, `node node_modules/typescript/bin/tsc -p jsconfig.json`, and `cargo fmt --check`. Cross-repository Vue acceptance is explicit: set `NANOBUG_VUE_FIXTURES` to the independent Vue plugin checkout before running tests. Without it, that integration case is skipped and must not be reported as passed.
 

@@ -4,10 +4,14 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 const require = createRequire(import.meta.url);
+// Plugin releases may retain an immutable native archive with its own version.
+const { version, runtimeVersion } = JSON.parse(await readFile('package.json', 'utf8'));
 const stage = 'target/service';
 if (process.argv.includes('--stage')) {
   if (process.platform !== 'win32' || process.arch !== 'x64' || process.version !== 'v24.19.0') throw new Error('Service staging requires the tested Windows x64 Node 24.19.0 runtime');
   await mkdir(stage, { recursive: true });
+  // Ignored output directories do not exist in a fresh checkout.
+  await mkdir('artifacts', { recursive: true });
   await cp('native', join(stage, 'native'), { recursive: true });
   await cp(dirname(require.resolve('typescript/package.json')), join(stage, 'node_modules/typescript'), { recursive: true, dereference: true });
   await cp(process.execPath, join(stage, 'node.exe'));
@@ -55,7 +59,7 @@ control_methods['typescript/project/documents'] = {
   permissions: ['editor.read', 'workspace.read'],
 };
 const manifest = {
-  id: 'typescript', name: 'TypeScript', version: '0.1.15', protocol: 7, scope: 'workspace',
+  id: 'typescript', name: 'TypeScript', version, protocol: 7, scope: 'workspace',
   // Bound local display preferences for the host's 1024 selected-source limit; compiler state
   // and document contents still never enter this private workspace store.
   component: 'typescript.wasm', contributions: 'plugin.toml', storage_limit: 8 * 1024 * 1024,
@@ -68,8 +72,8 @@ const manifest = {
     menus: ['typescript', 'javascript', 'typescriptreact', 'javascriptreact'].map(language => ({ location: 'editor', group: 'language', when: { language } })) }],
   plugin_services: { provides: { ...contracts, 'typescript.language': prepare }, requires: { 'language.contribution': contribution } },
   services: { engine: { program: 'node', platforms: ['windows-x86_64'], args: ['${dependency:tools}/native/main.mjs'],
-    // Metadata-only plugin .15 retains the complete, separately versioned native .14 closure.
-    installation: { executable: 'tools/node.exe', artifacts: [{ id: 'tools', version: '0.1.14', platform: 'windows-x86_64',
+    // Rebuilt native bytes use a new artifact identity; metadata-only updates retain it.
+    installation: { executable: 'tools/node.exe', artifacts: [{ id: 'tools', version: runtimeVersion, platform: 'windows-x86_64',
       sha256, source: { kind: 'package', path: archive }, format: { kind: 'zip' } }] } } },
   language_servers: [{ id: 'analysis', language: 'typescript', languages: ['javascript', 'javascriptreact', 'typescriptreact'],
     service: '', delegate: { contract: 'typescript.language', method: 'prepare', interactive: true },
