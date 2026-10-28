@@ -2,6 +2,15 @@
 
 [简体中文](README.zh-CN.md)
 
+Compatibility rebuild 0.1.16 requires a host implementing `language.lsp >=1.6,<2` and
+`workspace.files >=1.4,<2`, including the context registry and the canonical interactive prepare
+profile. The host's application version alone does not identify this target. Earlier 1.5/1.3
+hosts reject this package before activation; project choice, cancellation and permission checks
+remain enabled. This rebuild retains the native service 0.1.14 archive and introduces no SDK helper
+or new permission. Exact new host, SDK and ZIP identities and exercised checks are recorded in the
+host's `docs/plugins/verification/official-sdk-typescript-2026-10-21.md`; the historical runs below
+keep their original package identities.
+
 An independent Nanobug plugin owning TypeScript project contexts and native compiler workers. Plugin 0.1.15 supports the verified Windows x86-64 combinations of TypeScript 5.9.3, Node 24.19.0, and Vue 2.6.14, 2.7.16 and 3.5.22 through the independent Vue plugin. Vue support covers the 26 declared applicable writing combinations and their pinned dependencies. It retains the exact native service 0.1.14 archive and its SHA-256 `71c2794f0833bb548d365255878362b4637750bdac05e7ff7e8392df73884f83`. Plugin and native artifact versions are independent. Each selected configured root (or inferred source directory) has its own host transport lifetime; the original workspace boundary still contains shared source snapshots. This functional support declaration does not imply a Release or marketplace publication.
 
 The unchanged native closure passed 48 source and 48 sealed tool tests with no skips. Retained native historical/edit and external-script scenarios keep their original package identities. Host verification passed S4 conflict rejection/recovery (280.28s), S5 outer update/recovery (164.27s), Worker revocation/live update (67.94s/67.84s), and the three-version warm-cache S1 scenario using the .15/.12 pending-support metadata candidates (97.62s). These are retained runs, not new runs against a support-label rebuild.
