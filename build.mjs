@@ -69,13 +69,14 @@ const manifest = {
     'configuration': '^1', 'workspace.files': '>=1.4,<2', 'editor.edit': '>=1.1,<2', 'process': '^1', 'dependencies': '>=1.2,<2', 'editor.documents': '>=1.1,<2', 'ui.interaction': '^1', 'storage.private': '>=1.1,<2', 'plugin.commands': '^1' } },
   settings: { 'typescript.sdk': { title: 'TypeScript SDK / TypeScript 引擎目录', value_type: { kind: 'string', max_length: 4096 }, default: '', scope: 'project' } },
   commands: [{ id: 'select-project', title: 'Select analysis project / 选择分析项目', menu: true,
-    menus: ['typescript', 'javascript', 'typescriptreact', 'javascriptreact'].map(language => ({ location: 'editor', group: 'language', when: { language } })) }],
+    menus: ['typescript', 'typescriptreact'].map(language => ({ location: 'editor', group: 'language', when: { language } })) }],
   plugin_services: { provides: { ...contracts, 'typescript.language': prepare }, requires: { 'language.contribution': contribution } },
   services: { engine: { program: 'node', platforms: ['windows-x86_64'], args: ['${dependency:tools}/native/main.mjs'],
     // Rebuilt native bytes use a new artifact identity; metadata-only updates retain it.
     installation: { executable: 'tools/node.exe', artifacts: [{ id: 'tools', version: runtimeVersion, platform: 'windows-x86_64',
       sha256, source: { kind: 'package', path: archive }, format: { kind: 'zip' } }] } } },
-  language_servers: [{ id: 'analysis', language: 'typescript', languages: ['javascript', 'javascriptreact', 'typescriptreact'],
+  // The JavaScript plugin owns JS/JSX navigation. Related snapshots remain valid engine inputs.
+  language_servers: [{ id: 'analysis', language: 'typescript', languages: ['typescriptreact'],
     service: '', delegate: { contract: 'typescript.language', method: 'prepare', interactive: true },
     primary: true, formatting: true, editing: true,
     completion_triggers: ['.', '"', "'", '/', '@'] },

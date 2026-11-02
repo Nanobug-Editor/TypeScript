@@ -1,7 +1,7 @@
 {
   "id": "typescript",
   "name": "TypeScript",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "protocol": 7,
   "scope": "workspace",
   "component": "typescript.wasm",
@@ -66,21 +66,7 @@
           "location": "editor",
           "group": "language",
           "when": {
-            "language": "javascript"
-          }
-        },
-        {
-          "location": "editor",
-          "group": "language",
-          "when": {
             "language": "typescriptreact"
-          }
-        },
-        {
-          "location": "editor",
-          "group": "language",
-          "when": {
-            "language": "javascriptreact"
           }
         }
       ]
@@ -469,8 +455,6 @@
       "id": "analysis",
       "language": "typescript",
       "languages": [
-        "javascript",
-        "javascriptreact",
         "typescriptreact"
       ],
       "service": "",

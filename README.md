@@ -1,6 +1,6 @@
 # TypeScript for Nanobug
 
-Version **0.1.18** targets the Nanobug internal-test build of 2026-11-02 through the public host SDK. Installation IDs and permissions are preserved. Windows native helpers included in this package use a statically linked runtime.
+Version **0.1.19** targets Nanobug's 2026-11-02 public SDK. Installation IDs and permissions are preserved. The primary native role owns TS/TSX files; JavaScript owns JS/JSX and Vue owns `.vue` navigation. The internal engine still accepts related JavaScript inputs and explicit public service consumers for compatibility.
 
 [简体中文](README.zh-CN.md)
 
@@ -15,7 +15,7 @@ It uses Node 24.19.0 and TypeScript 5.9.3 and introduces no new permission. The 
 `version` and `runtimeVersion` independently from `package.json`; 49 source tests passed without skips.
 The historical host checks below keep their original package identities.
 
-An independent Nanobug plugin owning TypeScript project contexts and native compiler workers. The supported Windows x86-64 combinations use TypeScript 5.9.3, Node 24.19.0, and Vue 2.6.14, 2.7.16 and 3.5.22 through the independent Vue plugin. Vue support covers the 26 declared applicable writing combinations and their pinned dependencies. Plugin and native artifact versions are independent. Each selected configured root (or inferred source directory) has its own host transport lifetime; the original workspace boundary still contains shared source snapshots. This functional support declaration does not imply a Release or marketplace publication.
+An independent Nanobug plugin owning TypeScript project contexts and native compiler workers. Its pinned runtime uses TypeScript 5.9.3 and Node 24.19.0 on Windows x86-64. Plugin and native artifact versions are independent. Each configured root or inferred source directory has its own host transport lifetime; shared snapshots remain within the workspace boundary. The following Vue evidence describes the retained peer contracts and unchanged runtime, not a requirement to install TypeScript for native Vue navigation. No Release or marketplace publication is implied.
 
 The unchanged native closure passed 48 source and 48 sealed tool tests with no skips. Retained native historical/edit and external-script scenarios keep their original package identities. Host verification passed S4 conflict rejection/recovery (280.28s), S5 outer update/recovery (164.27s), Worker revocation/live update (67.94s/67.84s), and the three-version warm-cache S1 scenario using the .15/.12 pending-support metadata candidates (97.62s). These are retained runs, not new runs against a support-label rebuild.
 
