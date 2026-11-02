@@ -1,5 +1,7 @@
 # TypeScript for Nanobug
 
+版本 **0.1.18** 面向 2026-11-02 的 Nanobug 内部测试版，使用公开宿主 SDK 构建。保留安装 ID 和权限；包内附带的 Windows 原生辅助程序使用静态运行库。
+
 [English](README.md)
 
 运行时重建版 0.1.17 要求宿主完整实现 `language.lsp >=1.6,<2` 与

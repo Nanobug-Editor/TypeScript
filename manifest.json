@@ -1,7 +1,7 @@
 {
   "id": "typescript",
   "name": "TypeScript",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "protocol": 7,
   "scope": "workspace",
   "component": "typescript.wasm",
